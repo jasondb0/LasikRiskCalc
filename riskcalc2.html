@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refractive Surgery Ocular Pain Risk Calculator</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #f05a00;
+            --primary-dark: #c94800;
+            --primary-light: #ff7020;
+            --background: #fafafa;
+            --surface: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --border: #e0e0e0;
+            --border-focus: #f05a00;
+            --success: #00a878;
+            --warning: #ffa600;
+            --danger: #dc2626;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: var(--surface);
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 30px;
+            border-left: 6px solid var(--primary);
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 968px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-section {
+            background: var(--surface);
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.6s ease-out 0.1s both;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: var(--text-primary);
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .input-group {
+            margin-bottom: 28px;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .odds-ratio {
+            display: inline-block;
+            margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: var(--background);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            background: var(--surface);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(240, 90, 0, 0.1);
+        }
+
+        select:hover, input[type="number"]:hover {
+            border-color: var(--primary-light);
+        }
+
+        .result-section {
+            background: var(--surface);
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 20px;
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+
+        .risk-display {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 2px solid var(--border);
+        }
+
+        .risk-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .risk-value {
+            font-size: 56px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .risk-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .risk-category {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .risk-category.low {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .risk-category.moderate {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .risk-category.high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .interpretation {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .interpretation-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .interpretation-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .phq9-warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .phq9-info {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .reset-button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 20px;
+        }
+
+        .reset-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .reset-button:active {
+            transform: translateY(0);
+        }
+
+        .predictor-count {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+            border-radius: 10px;
+            border: 2px solid var(--border);
+        }
+
+        .predictor-count-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .predictor-count-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .model-info {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.6s ease-out 0.3s both;
+        }
+
+        .model-info-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .info-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .model-info-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        const MODEL = {
+            intercept: 0.0584,
+            coefficients: {
+                // Top predictors by odds ratio
+                Musclepain_1: 1.0603,
+                Musclepain_2: -0.5350,
+                Musclepain_0: -0.3645,
+                Musclepain_missing: -0.1024,
+                Allergyandasthmamedications1: 0.6470,
+                Gender0male1female2nonbinary_1: 0.4415,
+                Gender0male1female2nonbinary_0: -0.3831,
+                BL_NPSIScore: -0.4164,
+                BL_Doesyoureyepainfeelinglikeburning: 0.4033,
+                BL_intensityofyoureyepainonaverageduringthepastweek: 0.3936,
+                BL_provokedorincreasedbylight: 0.3814,
+                EyeAllergies0NO1yes_1: 0.3503,
+                EyeAllergies0NO1yes_0: -0.2919,
+                PHQ9Total: -0.4847,              // Continuous effect (OR = 0.616)
+                PHQ9_elevated: 0.3350,           // Threshold effect at ≥5 (OR = 1.398)
+                Sciatica0no1ever2now: 0.2918,
+                Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf: 0.2577,
+                BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev: 0.2451,
+                BL_intensityofyoureyepainwhenitwasworstduringthepastweek: 0.2142,
+                Ifyeshowlongdidyouwearcontactsonaregularbasisyears: -0.1722,
+                Age: 0.1037,
+                BL_OSDIScore: -0.0888,
+                BL_DEQ5Score: 0.0433,
+                BL_overallintensityofyoureyepainrightnow: -0.0239
+            }
+        };
+
+        function RiskCalculator() {
+            // State for all predictors - using reference categories as defaults
+            const [musclePain, setMusclePain] = useState('2'); // Reference: "missing" has coefficient, use neutral category
+            const [allergyMeds, setAllergyMeds] = useState('0'); // Reference category
+            const [gender, setGender] = useState('2'); // Non-binary (reference - no coefficient)
+            const [npsiScore, setNpsiScore] = useState(0);
+            const [eyePainBurning, setEyePainBurning] = useState('0'); // Reference category
+            const [avgEyePainIntensity, setAvgEyePainIntensity] = useState(0);
+            const [lightProvoked, setLightProvoked] = useState('0'); // Reference category
+            const [eyeAllergies, setEyeAllergies] = useState('2'); // Missing (reference - no coefficient)
+            const [phq9Total, setPhq9Total] = useState(0);
+            const [sciatica, setSciatica] = useState('0'); // Reference category
+            const [depressedHopeless, setDepressedHopeless] = useState('0'); // Reference category
+            const [eyesDry, setEyesDry] = useState(0);
+            const [worstEyePainIntensity, setWorstEyePainIntensity] = useState(0);
+            const [contactLensYears, setContactLensYears] = useState(0);
+            const [age, setAge] = useState(0);
+            const [osdiScore, setOsdiScore] = useState(0);
+            const [deq5Score, setDeq5Score] = useState(0);
+            const [currentEyePain, setCurrentEyePain] = useState(0);
+
+            // Check if calculator is ready to display results
+            const isCalculatorReady = useMemo(() => {
+                // Require key categorical variables to be explicitly set (not reference/unknown)
+                return musclePain !== '2' && // Not "Occasionally" default
+                       gender !== '2' && // Not "Non-binary" default
+                       eyeAllergies !== '2'; // Not "Missing/Unknown" default
+            }, [musclePain, gender, eyeAllergies]);
+
+            // Calculate risk
+            const risk = useMemo(() => {
+                let logit = MODEL.intercept;
+
+                // Add muscle pain contribution
+                if (musclePain === '1') logit += MODEL.coefficients.Musclepain_1;
+                else if (musclePain === '2') logit += MODEL.coefficients.Musclepain_2;
+                else if (musclePain === '0') logit += MODEL.coefficients.Musclepain_0;
+                else logit += MODEL.coefficients.Musclepain_missing;
+
+                // Add allergy medications
+                if (allergyMeds === '1') logit += MODEL.coefficients.Allergyandasthmamedications1;
+
+                // Add gender (non-binary is reference, no coefficient added)
+                if (gender === '1') logit += MODEL.coefficients.Gender0male1female2nonbinary_1;
+                else if (gender === '0') logit += MODEL.coefficients.Gender0male1female2nonbinary_0;
+                // gender === '2' (non-binary) is reference category, adds nothing
+
+                // Add eye allergies (missing/unknown is reference, no coefficient added)
+                if (eyeAllergies === '1') logit += MODEL.coefficients.EyeAllergies0NO1yes_1;
+                else if (eyeAllergies === '0') logit += MODEL.coefficients.EyeAllergies0NO1yes_0;
+                // eyeAllergies === '2' (missing) is reference category, adds nothing
+
+                // Add binary variables
+                if (eyePainBurning === '1') logit += MODEL.coefficients.BL_Doesyoureyepainfeelinglikeburning;
+                if (lightProvoked === '1') logit += MODEL.coefficients.BL_provokedorincreasedbylight;
+                if (sciatica === '1') logit += MODEL.coefficients.Sciatica0no1ever2now;
+                if (depressedHopeless === '1') logit += MODEL.coefficients.Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf;
+
+                // Add continuous variables
+                logit += MODEL.coefficients.BL_NPSIScore * npsiScore;
+                logit += MODEL.coefficients.BL_intensityofyoureyepainonaverageduringthepastweek * avgEyePainIntensity;
+                
+                // Non-linear PHQ9 calculation
+                const phq9Elevated = phq9Total >= 5 ? 1 : 0;
+                logit += MODEL.coefficients.PHQ9Total * phq9Total;
+                logit += MODEL.coefficients.PHQ9_elevated * phq9Elevated;
+                
+                logit += MODEL.coefficients.BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev * eyesDry;
+                logit += MODEL.coefficients.BL_intensityofyoureyepainwhenitwasworstduringthepastweek * worstEyePainIntensity;
+                logit += MODEL.coefficients.Ifyeshowlongdidyouwearcontactsonaregularbasisyears * contactLensYears;
+                logit += MODEL.coefficients.Age * age;
+                logit += MODEL.coefficients.BL_OSDIScore * osdiScore;
+                logit += MODEL.coefficients.BL_DEQ5Score * deq5Score;
+                logit += MODEL.coefficients.BL_overallintensityofyoureyepainrightnow * currentEyePain;
+
+                // Convert logit to probability
+                const probability = 1 / (1 + Math.exp(-logit));
+                return probability * 100;
+            }, [musclePain, allergyMeds, gender, npsiScore, eyePainBurning, avgEyePainIntensity, 
+                lightProvoked, eyeAllergies, phq9Total, sciatica, depressedHopeless, eyesDry, 
+                worstEyePainIntensity, contactLensYears, age, osdiScore, deq5Score, currentEyePain]);
+
+            const getRiskCategory = (riskValue) => {
+                if (riskValue < 30) return { label: 'Low Risk', className: 'low' };
+                if (riskValue < 60) return { label: 'Moderate Risk', className: 'moderate' };
+                return { label: 'High Risk', className: 'high' };
+            };
+
+            const getPhq9Warning = (phq9Value) => {
+                if (phq9Value >= 5 && phq9Value <= 9) {
+                    return {
+                        show: true,
+                        type: 'warning',
+                        message: 'Mild depression reportes (PHQ-9 5-9). This patient is in the highest risk group for persistent pain.'
+                    };
+                } else if (phq9Value >= 15) {
+                    return {
+                        show: true,
+                        type: 'info',
+                        message: 'ℹ️ Severe depression detected (PHQ-9 ≥15). Possible protective effect on pain.'
+                    };
+                }
+                return { show: false };
+            };
+
+            const getInterpretation = (riskValue) => {
+                if (riskValue < 30) {
+                    return "";
+                } else if (riskValue < 60) {
+                    return "";
+                } else {
+                    return "";
+                }
+            };
+
+            const resetCalculator = () => {
+                setMusclePain('2');
+                setAllergyMeds('0');
+                setGender('2');
+                setNpsiScore(0);
+                setEyePainBurning('0');
+                setAvgEyePainIntensity(0);
+                setLightProvoked('0');
+                setEyeAllergies('2');
+                setPhq9Total(0);
+                setSciatica('0');
+                setDepressedHopeless('0');
+                setEyesDry(0);
+                setWorstEyePainIntensity(0);
+                setContactLensYears(0);
+                setAge(0);
+                setOsdiScore(0);
+                setDeq5Score(0);
+                setCurrentEyePain(0);
+            };
+
+            const category = getRiskCategory(risk);
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <div className="header-content">
+                            <div className="logo">
+                                <img src="eyeicon.png" alt="Logo" style={{width: '100%', height: '100%', objectFit: 'contain'}} />
+                                </div>
+                            <div>
+                                <h1>Refractive Surgery Ocular Pain Risk Calculator</h1>
+                                <div className="subtitle">Predictive model for persistent ocular pain after LASIK and PRK</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="calculator-grid">
+                        <div className="input-section">
+                            <div className="section-title">Patient Demographics & History</div>
+
+                            <div className="input-group">
+                                <label>Musclepain <span className="odds-ratio">OR: 2.89 (often) | 0.59 (occasionally) | 0.69 (never)</span></label>
+                                <select value={musclePain} onChange={(e) => setMusclePain(e.target.value)}>
+                                    <option value="2">Select muscle pain status...</option>
+                                    <option value="0">Never</option>
+                                    <option value="1">Often</option>
+                                    <option value="missing">Occasionally</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Allergy Medication Use <span className="odds-ratio">OR: 1.91</span></label>
+                                <select value={allergyMeds} onChange={(e) => setAllergyMeds(e.target.value)}>
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Gender <span className="odds-ratio">Female OR: 1.56 | Male OR: 0.68</span></label>
+                                <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                                    <option value="2">Select gender...</option>
+                                    <option value="0">Male</option>
+                                    <option value="1">Female</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Ocular Allergies <span className="odds-ratio">Yes OR: 1.42 | No OR: 0.75</span></label>
+                                <select value={eyeAllergies} onChange={(e) => setEyeAllergies(e.target.value)}>
+                                    <option value="2">Select eye allergies status...</option>
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Sciatica pain currently <span className="odds-ratio">OR: 1.34</span></label>
+                                <select value={sciatica} onChange={(e) => setSciatica(e.target.value)}>
+                                    <option value="0">No / Ever</option>
+                                    <option value="1">Currently</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Age <span className="odds-ratio">OR: 1.11 per year</span></label>
+                                <input 
+                                    type="number" 
+                                    value={age === 0 ? '' : age} 
+                                    onChange={(e) => setAge(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    max="120"
+                                    placeholder="Enter age in years"
+                                />
+                            </div>
+
+                            {/* >>> RENAMED & MERGED SECTION TITLE HERE <<< */}
+                            <div className="section-title" style={{marginTop: '30px'}}>Pre-Surgical Ocular History and Questionnaires</div>
+
+                            {/* Former 'Baseline Eye Pain Characteristics' */}
+                            <div className="input-group">
+                                <label>Burning characteristic to eye pain <span className="odds-ratio">OR: 1.50</span></label>
+                                <select value={eyePainBurning} onChange={(e) => setEyePainBurning(e.target.value)}>
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Eye pain that is provoked or increased by light <span className="odds-ratio">OR: 1.46</span></label>
+                                <select value={lightProvoked} onChange={(e) => setLightProvoked(e.target.value)}>
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Intensity of eye pain on average during the past week <span className="odds-ratio">OR: 1.48 per point</span></label>
+                                <input 
+                                    type="number" 
+                                    value={avgEyePainIntensity === 0 ? '' : avgEyePainIntensity} 
+                                    onChange={(e) => setAvgEyePainIntensity(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    max="10"
+                                    placeholder="0-10 scale"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>Intensity of eye pain when it was worst during the past week <span className="odds-ratio">OR: 1.24 per point</span></label>
+                                <input 
+                                    type="number" 
+                                    value={worstEyePainIntensity === 0 ? '' : worstEyePainIntensity} 
+                                    onChange={(e) => setWorstEyePainIntensity(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    max="10"
+                                    placeholder="0-10 scale"
+                                />
+                            </div>
+
+
+                            {/* Former 'Clinical Scores & History' – now under same heading */}
+
+                            <div className="input-group">
+                                <label>NPSI Score <span className="odds-ratio">OR: 0.66 per point</span></label>
+                                <input 
+                                    type="number" 
+                                    value={npsiScore === 0 ? '' : npsiScore} 
+                                    onChange={(e) => setNpsiScore(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    placeholder="Neuropathic Pain Symptom Inventory score"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>PHQ9 Total <span className="odds-ratio">Threshold OR: 1.40 | Continuous OR: 0.62</span></label>
+                                <input 
+                                    type="number" 
+                                    value={phq9Total === 0 ? '' : phq9Total} 
+                                    onChange={(e) => setPhq9Total(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    max="27"
+                                    placeholder="Patient Health Questionnaire-9 (0-27)"
+                                />
+                                <div style={{fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px'}}>
+                                    Non-linear effect: Mild depression (5-9) = highest risk; Severe (15+) = protected by treatment
+                                </div>
+                            </div>
+
+                            <div className="input-group">
+                                <label>OSDI Score <span className="odds-ratio">Continuous</span></label>
+                                <input 
+                                    type="number" 
+                                    value={osdiScore === 0 ? '' : osdiScore} 
+                                    onChange={(e) => setOsdiScore(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    max="100"
+                                    placeholder="Ocular Surface Disease Index score"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>DEQ5 Score <span className="odds-ratio">Continuous</span></label>
+                                <input 
+                                    type="number" 
+                                    value={deq5Score === 0 ? '' : deq5Score} 
+                                    onChange={(e) => setDeq5Score(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    placeholder="Dry Eye Questionnaire-5 score"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>Prior Contact Lens Wear <span className="odds-ratio">OR: 0.84 per year</span></label>
+                                <input 
+                                    type="number" 
+                                    value={contactLensYears === 0 ? '' : contactLensYears} 
+                                    onChange={(e) => setContactLensYears(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    placeholder="Years of contact lens wear"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="result-section">
+                            {!isCalculatorReady ? (
+                                <div style={{padding: '40px', textAlign: 'center'}}>
+                                    <div style={{fontSize: '48px', marginBottom: '20px'}}>📋</div>
+                                    <div style={{fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '10px'}}>
+                                        Ready to Calculate
+                                    </div>
+                                    <div style={{fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.6'}}>
+                                        Please provide the following required information:
+                                        <ul style={{textAlign: 'left', marginTop: '15px', paddingLeft: '20px'}}>
+                                            <li style={{marginBottom: '8px'}}>Muscle Pain status</li>
+                                            <li style={{marginBottom: '8px'}}>Patient Gender</li>
+                                            <li style={{marginBottom: '8px'}}>Eye Allergies status</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="risk-display">
+                                        <div className="risk-label">Predicted Risk</div>
+                                        <div className="risk-value">{risk.toFixed(1)}%</div>
+                                        <div className="risk-description">Moderate or Greater Pain</div>
+                                        <div className={`risk-category ${category.className}`}>
+                                            {category.label}
+                                        </div>
+                                    </div>
+
+                                    <div className="interpretation">
+                                        <div className="interpretation-title">Clinical Interpretation</div>
+                                        <div className="interpretation-text">
+                                            {getInterpretation(risk)}
+                                        </div>
+                                    </div>
+
+                                    {(() => {
+                                        const phq9Warning = getPhq9Warning(phq9Total);
+                                        if (phq9Warning.show) {
+                                            return (
+                                                <div className={`interpretation ${phq9Warning.type === 'warning' ? 'phq9-warning' : 'phq9-info'}`} style={{marginTop: '15px'}}>
+                                                    <div className="interpretation-title">PHQ-9 Depression Alert</div>
+                                                    <div className="interpretation-text">
+                                                        {phq9Warning.message}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    <button className="reset-button" onClick={resetCalculator}>
+                                        Reset Calculator
+                                    </button>
+
+                                    <div className="predictor-count">
+                                        <div className="predictor-count-number">18</div>
+                                        <div className="predictor-count-label">Active Predictors</div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="model-info">
+                        <div className="model-info-title">
+                            <span className="info-badge">MODEL INFO</span>
+                            Logistic Regression Model
+                        </div>
+                        <div className="model-info-text">
+                            This calculator implements a logistic regression machine learning model with 23 features (strongest predictors displayed). 
+                            The model uses coefficients derived from prospective clinical data collected from patients who underwent LASIK or PRK recruited from 2 sites. 
+                            Patients were recruited prior to surgery and followed for 6m after sugery. PHQ-9 depression scores use a non-linear model with both continuous 
+                            (OR=0.62) and threshold effects (OR=1.40 at ≥5), reflecting the highest risk in mild, untreated depression. 
+                            Intercept: 0.0584. Risk is calculated using the logistic function: P = 1 / (1 + e^(-logit)). 
+                            This tool is intended for clinical decision support and should be used in conjunction with clinical judgment.
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<RiskCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
