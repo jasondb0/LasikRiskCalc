@@ -388,35 +388,88 @@
         const { useState, useMemo } = React;
 
         const MODEL = {
-            intercept: 0.0584,
+            intercept: 0.1173,
             coefficients: {
-                // Top predictors by odds ratio
-                Musclepain_1: 1.0603,
-                Musclepain_2: -0.5350,
-                Musclepain_0: -0.3645,
-                Musclepain_missing: -0.1024,
-                Allergyandasthmamedications1: 0.6470,
-                Gender0male1female2nonbinary_1: 0.4415,
-                Gender0male1female2nonbinary_0: -0.3831,
-                BL_NPSIScore: -0.4164,
-                BL_Doesyoureyepainfeelinglikeburning: 0.4033,
-                BL_intensityofyoureyepainonaverageduringthepastweek: 0.3936,
-                BL_provokedorincreasedbylight: 0.3814,
-                EyeAllergies0NO1yes_1: 0.3503,
-                EyeAllergies0NO1yes_0: -0.2919,
-                PHQ9Total: -0.4847,              // Continuous effect (OR = 0.616)
-                PHQ9_elevated: 0.3350,           // Threshold effect at ≥5 (OR = 1.398)
-                Sciatica0no1ever2now: 0.2918,
-                Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf: 0.2577,
-                BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev: 0.2451,
-                BL_intensityofyoureyepainwhenitwasworstduringthepastweek: 0.2142,
-                Ifyeshowlongdidyouwearcontactsonaregularbasisyears: -0.1722,
-                Age: 0.1037,
-                BL_OSDIScore: -0.0888,
-                BL_DEQ5Score: 0.0433,
-                BL_overallintensityofyoureyepainrightnow: -0.0239
-            }
-        };
+                // Categorical - One-hot encoded (no standardization)
+                Musclepain_1: 1.1093,
+                Musclepain_2: -0.5240,
+                Musclepain_0: -0.3766,
+                Musclepain_missing: -0.0915,
+                Allergyandasthmamedications1: 0.5869,
+                Gender0male1female2nonbinary_1: 0.5225,
+                Gender0male1female2nonbinary_0: -0.4053,
+                EyeAllergies0NO1yes_1: 0.4266,
+                EyeAllergies0NO1yes_0: -0.3093,
+                ContactlenswearEVER0N1Y_0: 0.3327,   // ← NEW: Never wore contacts
+                ContactlenswearEVER0N1Y_1: -0.2154,  // ← NEW: Ever wore contacts
+                
+                // Continuous - Must be standardized
+                BL_NPSIScore: -0.4107,
+                BL_Doesyoureyepainfeelinglikeburning: 0.3729,
+                BL_provokedorincreasedbylight: 0.3669,
+                BL_intensityofyoureyepainonaverageduringthepastweek: 0.3471,
+                PHQ9Total: -0.3041,
+                PHQ9_elevated: 0.3350,  // Keep your existing threshold coefficient
+                Sciatica0no1ever2now: 0.2855,
+                Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf: 0.2629,
+                BL_intensityofyoureyepainwhenitwasworstduringthepastweek: 0.2501,
+                BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev: 0.2171,
+                BL_OSDIScore: -0.1193,
+                BL_DEQ5Score: 0.0907,
+                Age: 0.0498,
+                BL_overallintensityofyoureyepainrightnow: -0.0308
+            },
+            calibration: {
+            // ← ADD THESE VALUES FROM PYTHON OUTPUT
+            A: -0.720547,  // Replace with actual A value
+            B: 1.644866    // Replace with actual B value
+        },
+            standardization: {
+            BL_DEQ5Score_mean: 3.656028,
+            BL_DEQ5Score_std: 3.181080,
+            BL_intensityofyoureyepainwhenitwasworstduringthepastweek_mean: 0.500000,
+            BL_intensityofyoureyepainwhenitwasworstduringthepastweek_std: 1.098839,
+            BL_intensityofyoureyepainonaverageduringthepastweek_mean: 0.184397,
+            BL_intensityofyoureyepainonaverageduringthepastweek_std: 0.620030,
+            BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev_mean: 0.879433,
+            BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev_std: 0.902912,
+            Age_mean: 34.560284,
+            Age_std: 7.851339,
+            BL_NPSIScore_mean: 0.921986,
+            BL_NPSIScore_std: 2.305008,
+            BL_OSDIScore_mean: 6.875296,
+            BL_OSDIScore_std: 10.003167,
+            BL_overallintensityofyoureyepainrightnow_mean: 0.102837,
+            BL_overallintensityofyoureyepainrightnow_std: 0.437667,
+            BL_Doesyoureyepainfeelinglikeburning_mean: 0.070922,
+            BL_Doesyoureyepainfeelinglikeburning_std: 0.350185,
+            BL_provokedorincreasedbylight_mean: 0.333333,
+            BL_provokedorincreasedbylight_std: 0.919965,
+            Sciatica0no1ever2now_mean: 0.067376,
+            Sciatica0no1ever2now_std: 0.290022,
+            Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf_mean: 0.198582,
+            Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf_std: 0.449110,
+            PHQ9Total_mean: 2.347518,
+            PHQ9Total_std: 3.144252
+        }
+    };
+        function calibrateRisk(rawProbability) {
+            // Platt scaling: corrects over-confident predictions
+                if (rawProbability <= 0 || rawProbability >= 1) {
+            return rawProbability; // Edge cases
+        }
+        
+        // Convert to logit
+        const rawLogit = Math.log(rawProbability / (1 - rawProbability));
+        
+        // Apply calibration
+        const calibratedLogit = MODEL.calibration.A + MODEL.calibration.B * rawLogit;
+        
+        // Convert back to probability
+        const calibratedProbability = 1 / (1 + Math.exp(-calibratedLogit));
+        
+        return calibratedProbability;
+    }
 
         function RiskCalculator() {
             // State for all predictors - using reference categories as defaults
@@ -424,16 +477,16 @@
             const [allergyMeds, setAllergyMeds] = useState('0'); // Reference category
             const [gender, setGender] = useState('2'); // Non-binary (reference - no coefficient)
             const [npsiScore, setNpsiScore] = useState(0);
-            const [eyePainBurning, setEyePainBurning] = useState('0'); // Reference category
+            const [eyePainBurning, setEyePainBurning] = useState(0); // Reference category
             const [avgEyePainIntensity, setAvgEyePainIntensity] = useState(0);
-            const [lightProvoked, setLightProvoked] = useState('0'); // Reference category
+            const [lightProvoked, setLightProvoked] = useState(0); // Reference category
             const [eyeAllergies, setEyeAllergies] = useState('2'); // Missing (reference - no coefficient)
             const [phq9Total, setPhq9Total] = useState(0);
             const [sciatica, setSciatica] = useState('0'); // Reference category
             const [depressedHopeless, setDepressedHopeless] = useState('0'); // Reference category
             const [eyesDry, setEyesDry] = useState(0);
             const [worstEyePainIntensity, setWorstEyePainIntensity] = useState(0);
-            const [contactLensYears, setContactLensYears] = useState(0);
+            const [contactLensEver, setContactLensEver] = useState('0');  // '0' = No, '1' = Yes
             const [age, setAge] = useState(0);
             const [osdiScore, setOsdiScore] = useState(0);
             const [deq5Score, setDeq5Score] = useState(0);
@@ -469,36 +522,74 @@
                 if (eyeAllergies === '1') logit += MODEL.coefficients.EyeAllergies0NO1yes_1;
                 else if (eyeAllergies === '0') logit += MODEL.coefficients.EyeAllergies0NO1yes_0;
                 // eyeAllergies === '2' (missing) is reference category, adds nothing
-
-                // Add binary variables
-                if (eyePainBurning === '1') logit += MODEL.coefficients.BL_Doesyoureyepainfeelinglikeburning;
-                if (lightProvoked === '1') logit += MODEL.coefficients.BL_provokedorincreasedbylight;
-                if (sciatica === '1') logit += MODEL.coefficients.Sciatica0no1ever2now;
-                if (depressedHopeless === '1') logit += MODEL.coefficients.Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf;
-
-                // Add continuous variables
-                logit += MODEL.coefficients.BL_NPSIScore * npsiScore;
-                logit += MODEL.coefficients.BL_intensityofyoureyepainonaverageduringthepastweek * avgEyePainIntensity;
+                if (contactLensEver === '1') {
+                    logit += MODEL.coefficients.ContactlenswearEVER0N1Y_1;
+                } else if (contactLensEver === '0') {
+                    logit += MODEL.coefficients.ContactlenswearEVER0N1Y_0;
+                }
+                // ===== CONTINUOUS VARIABLES (MUST be standardized) =====
                 
-                // Non-linear PHQ9 calculation
-                const phq9Elevated = phq9Total >= 5 ? 1 : 0;
-                logit += MODEL.coefficients.PHQ9Total * phq9Total;
+                // Age - STANDARDIZED
+                const age_std = (age - MODEL.standardization.Age_mean) / MODEL.standardization.Age_std;
+                logit += MODEL.coefficients.Age * age_std;
+                
+                // NPSI Score - STANDARDIZED
+                const npsi_std = (npsiScore - MODEL.standardization.BL_NPSIScore_mean) / MODEL.standardization.BL_NPSIScore_std;
+                logit += MODEL.coefficients.BL_NPSIScore * npsi_std;
+                
+                // Average pain intensity - STANDARDIZED
+                const avgPain_std = (avgEyePainIntensity - MODEL.standardization.BL_intensityofyoureyepainonaverageduringthepastweek_mean) / MODEL.standardization.BL_intensityofyoureyepainonaverageduringthepastweek_std;
+                logit += MODEL.coefficients.BL_intensityofyoureyepainonaverageduringthepastweek * avgPain_std;
+                
+                // Worst pain intensity - STANDARDIZED
+                const worstPain_std = (worstEyePainIntensity - MODEL.standardization.BL_intensityofyoureyepainwhenitwasworstduringthepastweek_mean) / MODEL.standardization.BL_intensityofyoureyepainwhenitwasworstduringthepastweek_std;
+                logit += MODEL.coefficients.BL_intensityofyoureyepainwhenitwasworstduringthepastweek * worstPain_std;
+                
+                // Current pain - STANDARDIZED
+                const currentPain_std = (currentEyePain - MODEL.standardization.BL_overallintensityofyoureyepainrightnow_mean) / MODEL.standardization.BL_overallintensityofyoureyepainrightnow_std;
+                logit += MODEL.coefficients.BL_overallintensityofyoureyepainrightnow * currentPain_std;
+                
+                // Burning pain - STANDARDIZED
+                const burning_std = (eyePainBurning - MODEL.standardization.BL_Doesyoureyepainfeelinglikeburning_mean) / MODEL.standardization.BL_Doesyoureyepainfeelinglikeburning_std;
+                logit += MODEL.coefficients.BL_Doesyoureyepainfeelinglikeburning * burning_std;
+                
+                // Light-provoked pain - STANDARDIZED
+                const light_std = (lightProvoked - MODEL.standardization.BL_provokedorincreasedbylight_mean) / MODEL.standardization.BL_provokedorincreasedbylight_std;
+                logit += MODEL.coefficients.BL_provokedorincreasedbylight * light_std;
+                
+                // Dry eye frequency - STANDARDIZED
+                const dryEye_std = (eyesDry - MODEL.standardization.BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev_mean) / MODEL.standardization.BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev_std;
+                logit += MODEL.coefficients.BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev * dryEye_std;
+                
+                // OSDI Score - STANDARDIZED
+                const osdi_std = (osdiScore - MODEL.standardization.BL_OSDIScore_mean) / MODEL.standardization.BL_OSDIScore_std;
+                logit += MODEL.coefficients.BL_OSDIScore * osdi_std;
+                
+                // DEQ5 Score - STANDARDIZED
+                const deq5_std = (deq5Score - MODEL.standardization.BL_DEQ5Score_mean) / MODEL.standardization.BL_DEQ5Score_std;
+                logit += MODEL.coefficients.BL_DEQ5Score * deq5_std;
+                
+                // Sciatica - STANDARDIZED (yes, even though it looks categorical!)
+                const sciatica_std = (Number(sciatica) - MODEL.standardization.Sciatica0no1ever2now_mean) / MODEL.standardization.Sciatica0no1ever2now_std;
+                logit += MODEL.coefficients.Sciatica0no1ever2now * sciatica_std;
+                
+                // Depression item - STANDARDIZED (yes, even though it looks categorical!)
+                const depression_std = (Number(depressedHopeless) - MODEL.standardization.Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf_mean) / MODEL.standardization.Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf_std;
+                logit += MODEL.coefficients.Feelingdowndepressedorhopeless0Notatall1Severaldays2Morethanhalf * depression_std;
+                
+                // PHQ9 - Non-linear (BOTH need standardization)
+                const phq9_std = (phq9Total - MODEL.standardization.PHQ9Total_mean) / MODEL.standardization.PHQ9Total_std;
+                const phq9Elevated = phq9Total >= 5 ? 1 : 0;  // Threshold is NOT standardized
+                logit += MODEL.coefficients.PHQ9Total * phq9_std;
                 logit += MODEL.coefficients.PHQ9_elevated * phq9Elevated;
-                
-                logit += MODEL.coefficients.BL_Duringatypicaldayinthepastmonthhowoftendidyoureyesfeeldry0Nev * eyesDry;
-                logit += MODEL.coefficients.BL_intensityofyoureyepainwhenitwasworstduringthepastweek * worstEyePainIntensity;
-                logit += MODEL.coefficients.Ifyeshowlongdidyouwearcontactsonaregularbasisyears * contactLensYears;
-                logit += MODEL.coefficients.Age * age;
-                logit += MODEL.coefficients.BL_OSDIScore * osdiScore;
-                logit += MODEL.coefficients.BL_DEQ5Score * deq5Score;
-                logit += MODEL.coefficients.BL_overallintensityofyoureyepainrightnow * currentEyePain;
 
                 // Convert logit to probability
-                const probability = 1 / (1 + Math.exp(-logit));
-                return probability * 100;
+                const rawProbability = 1 / (1 + Math.exp(-logit));
+                const calibratedProbability = calibrateRisk(rawProbability);
+                return calibratedProbability * 100;
             }, [musclePain, allergyMeds, gender, npsiScore, eyePainBurning, avgEyePainIntensity, 
                 lightProvoked, eyeAllergies, phq9Total, sciatica, depressedHopeless, eyesDry, 
-                worstEyePainIntensity, contactLensYears, age, osdiScore, deq5Score, currentEyePain]);
+                worstEyePainIntensity, contactLensEver, age, osdiScore, deq5Score, currentEyePain]);
 
             const getRiskCategory = (riskValue) => {
                 if (riskValue < 30) return { label: 'Low Risk', className: 'low' };
@@ -547,7 +638,7 @@
                 setDepressedHopeless('0');
                 setEyesDry(0);
                 setWorstEyePainIntensity(0);
-                setContactLensYears(0);
+                setContactLensEver('0');
                 setAge(0);
                 setOsdiScore(0);
                 setDeq5Score(0);
@@ -575,21 +666,15 @@
                             <div className="section-title">Patient Demographics & History</div>
 
                             <div className="input-group">
-                                <label>Musclepain <span className="odds-ratio">OR: 2.89 (often) | 0.59 (occasionally) | 0.69 (never)</span></label>
-                                <select value={musclePain} onChange={(e) => setMusclePain(e.target.value)}>
-                                    <option value="2">Select muscle pain status...</option>
-                                    <option value="0">Never</option>
-                                    <option value="1">Often</option>
-                                    <option value="missing">Occasionally</option>
-                                </select>
-                            </div>
-
-                            <div className="input-group">
-                                <label>Allergy Medication Use <span className="odds-ratio">OR: 1.91</span></label>
-                                <select value={allergyMeds} onChange={(e) => setAllergyMeds(e.target.value)}>
-                                    <option value="0">No</option>
-                                    <option value="1">Yes</option>
-                                </select>
+                                <label>Age <span className="odds-ratio">OR: 1.11 per year</span></label>
+                                <input 
+                                    type="number" 
+                                    value={age === 0 ? '' : age} 
+                                    onChange={(e) => setAge(e.target.value === '' ? 0 : Number(e.target.value))}
+                                    min="0"
+                                    max="120"
+                                    placeholder="Enter age in years"
+                                />
                             </div>
 
                             <div className="input-group">
@@ -598,6 +683,14 @@
                                     <option value="2">Select gender...</option>
                                     <option value="0">Male</option>
                                     <option value="1">Female</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label>Allergy Medication Use <span className="odds-ratio">OR: 1.91</span></label>
+                                <select value={allergyMeds} onChange={(e) => setAllergyMeds(e.target.value)}>
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
                                 </select>
                             </div>
 
@@ -611,43 +704,50 @@
                             </div>
 
                             <div className="input-group">
-                                <label>Sciatica pain currently <span className="odds-ratio">OR: 1.34</span></label>
+                                <label>Chronic Sciatica Pain (>3 months) <span className="odds-ratio">OR: 1.34</span></label>
                                 <select value={sciatica} onChange={(e) => setSciatica(e.target.value)}>
-                                    <option value="0">No / Ever</option>
+                                    <option value="0">No / Past</option>
                                     <option value="1">Currently</option>
                                 </select>
                             </div>
 
                             <div className="input-group">
-                                <label>Age <span className="odds-ratio">OR: 1.11 per year</span></label>
-                                <input 
-                                    type="number" 
-                                    value={age === 0 ? '' : age} 
-                                    onChange={(e) => setAge(e.target.value === '' ? 0 : Number(e.target.value))}
-                                    min="0"
-                                    max="120"
-                                    placeholder="Enter age in years"
-                                />
+                                <label>Chronic Muscle Pain (>3 months) <span className="odds-ratio">OR: 2.89 (often) | 0.59 (occasionally) | 0.69 (never)</span></label>
+                                <select value={musclePain} onChange={(e) => setMusclePain(e.target.value)}>
+                                    <option value="2">Select muscle pain status...</option>
+                                    <option value="0">Never</option>
+                                    <option value="1">Current</option>
+                                    <option value="missing">Past</option>
+                                </select>
                             </div>
+
 
                             {/* >>> RENAMED & MERGED SECTION TITLE HERE <<< */}
                             <div className="section-title" style={{marginTop: '30px'}}>Pre-Surgical Ocular History and Questionnaires</div>
 
                             {/* Former 'Baseline Eye Pain Characteristics' */}
                             <div className="input-group">
-                                <label>Burning characteristic to eye pain <span className="odds-ratio">OR: 1.50</span></label>
-                                <select value={eyePainBurning} onChange={(e) => setEyePainBurning(e.target.value)}>
-                                    <option value="0">No</option>
-                                    <option value="1">Yes</option>
-                                </select>
+                                <label>Eye pain described as burning <span className="odds-ratio">OR: 1.50 per point</span></label>
+                                <input 
+                                    type="number" 
+                                    value={eyePainBurning === 0 ? '' : eyePainBurning}  // ← Add this condition
+                                    onChange={(e) => setEyePainBurning(e.target.value === '' ? 0 : Number(e.target.value))}  // ← Add this condition
+                                    min="0"
+                                    max="10"
+                                    placeholder="0-10 scale: How intense is the burning sensation?"
+                                />
                             </div>
 
                             <div className="input-group">
-                                <label>Eye pain that is provoked or increased by light <span className="odds-ratio">OR: 1.46</span></label>
-                                <select value={lightProvoked} onChange={(e) => setLightProvoked(e.target.value)}>
-                                    <option value="0">No</option>
-                                    <option value="1">Yes</option>
-                                </select>
+                                <label>Pain provoked or increased by light <span className="odds-ratio">OR: 1.46 per point</span></label>
+                                <input 
+                                    type="number" 
+                                    value={lightProvoked === 0 ? '' : lightProvoked}  // ← Add this condition
+                                    onChange={(e) => setLightProvoked(e.target.value === '' ? 0 : Number(e.target.value))}  // ← Add this condition
+                                    min="0"
+                                    max="10"
+                                    placeholder="0-10 scale: How much does light worsen pain?"
+                                />
                             </div>
 
                             <div className="input-group">
@@ -727,14 +827,11 @@
                             </div>
 
                             <div className="input-group">
-                                <label>Prior Contact Lens Wear <span className="odds-ratio">OR: 0.84 per year</span></label>
-                                <input 
-                                    type="number" 
-                                    value={contactLensYears === 0 ? '' : contactLensYears} 
-                                    onChange={(e) => setContactLensYears(e.target.value === '' ? 0 : Number(e.target.value))}
-                                    min="0"
-                                    placeholder="Years of contact lens wear"
-                                />
+                                <label>Contact Lens Wear History <span className="odds-ratio">Ever: OR 0.81 | Never: OR 1.40</span></label>
+                                <select value={contactLensEver} onChange={(e) => setContactLensEver(e.target.value)}>
+                                    <option value="0">Never wore contact lenses</option>
+                                    <option value="1">Ever wore contact lenses</option>
+                                </select>
                             </div>
                         </div>
 
@@ -809,8 +906,8 @@
                             This calculator implements a logistic regression machine learning model with 23 features (strongest predictors displayed). 
                             The model uses coefficients derived from prospective clinical data collected from patients who underwent LASIK or PRK recruited from 2 sites. 
                             Patients were recruited prior to surgery and followed for 6m after sugery. PHQ-9 depression scores use a non-linear model with both continuous 
-                            (OR=0.62) and threshold effects (OR=1.40 at ≥5), reflecting the highest risk in mild, untreated depression. 
-                            Intercept: 0.0584. Risk is calculated using the logistic function: P = 1 / (1 + e^(-logit)). 
+                            (OR=0.62) and threshold effects (OR=1.40 at ≥5), reflecting the highest risk in mild depression. 
+                            Risk is calculated using the logistic function: P = 1 / (1 + e^(-logit)). 
                             This tool is intended for clinical decision support and should be used in conjunction with clinical judgment.
                         </div>
                     </div>
